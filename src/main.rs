@@ -42,7 +42,7 @@ enum Commands {
         video_url: String,
     },
     RefWiki {
-        #[arg(long)]
+        #[arg(short, long)]
         article_url: String,
     },
 }
@@ -112,10 +112,7 @@ pub fn parse_yt_link(url: &str) -> &str {
 }
 
 pub async fn cite_yt(api_key: &str, video_url: &str) {
-    println!("api_key: {}", api_key);
-    println!("url: {}", video_url);
     let video_id = parse_yt_link(video_url);
-    println!("id: {}", video_id);
     match fetch_video_info(api_key, video_id).await {
         Ok(video) => {
             println!("{video}");
@@ -130,15 +127,68 @@ pub async fn cite_yt(api_key: &str, video_url: &str) {
     }
 }
 
+async fn fetch_wiki_info(wiki_id: &str) -> Result<Value, Box<dyn std::error::Error>> {
+    let client = Client::new(); // Create a new HTTP client
+
+    let url = format!(
+        "https://en.wikipedia.org/w/api.php?action=parse&format=json&formatversion=2&page={}&prop=",
+        wiki_id
+    );
+
+    let response = client.get(&url).send().await?; // Send the HTTP GET request
+
+    // Check if the response was successful
+    if !response.status().is_success() {
+        println!("API request failed with status: {}", response.status());
+        println!("Response body: {}", response.text().await?);
+        return Err("API request failed".into());
+    }
+
+    let json: Value = response.json().await?; // Parse the response body as JSON
+    
+    // Check for API errors
+    if let Some(error) = json.get("error") {
+        print!("API returned an error: {:?}", error);
+        return Err("API returned an error".into());
+    }
+
+    Ok(json) 
+}
+
+pub fn parse_wiki_link(url: &str) -> &str {
+    url.split("/").last().unwrap_or("")
+}
+
+pub async fn ref_wiki(wiki_url: &str) {
+    let wiki_id = parse_wiki_link(wiki_url);
+    
+    match fetch_wiki_info(wiki_id).await {
+        Ok(article) => {
+            let mut clipboard = Clipboard::new().unwrap();
+            let res = format_to_ref(article, wiki_url);
+            clipboard.set_text(res.clone()).unwrap();
+            println!("{}", res);
+        }
+        Err(e) => {
+            println!("Error fetching video: {}", e);
+        }
+    }
+}
+
+fn format_to_ref(article: Value, article_url: &str) -> String {
+    format!(" - [«{}» — wikipedia.org]({})",
+        article["parse"]["title"].as_str().unwrap_or(""),
+        article_url,
+    )
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cfg = Cli::from_env_and_args();
 
     match &cfg.command {
         Some(Commands::CiteYT { yt_api_key, video_url }) => { cite_yt(yt_api_key, video_url).await; },
-        Some(Commands::RefWiki { article_url }) => {
-            println!("article: {}", article_url);
-        }
+        Some(Commands::RefWiki { article_url }) => { ref_wiki(article_url).await; }
         None => {
             println!("There was no subcommand given");
         }
