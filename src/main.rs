@@ -2,7 +2,7 @@ use clap::{Parser, Subcommand};
 use dotenv::dotenv;
 use std::path::PathBuf;
 use reqwest::Client;
-use serde_json::Value;
+use serde_json::{Value, json};
 use chrono::{Datelike, NaiveDateTime};
 use arboard::Clipboard;
 use clap::builder::Str;
@@ -40,6 +40,10 @@ enum Commands {
         
         #[arg(short, long)]
         video_url: String,
+    },
+    CiteIMDB { 
+        #[arg(short, long)]
+        url: String,
     },
     RefWiki {
         #[arg(short, long)]
@@ -94,6 +98,7 @@ aliases:
 Related:: 
 Tags:: #status/glazed, #cite/video
 Index:
+- 
 
 Preceded:: 
 Followed::",
@@ -115,7 +120,6 @@ pub async fn cite_yt(api_key: &str, video_url: &str) {
     let video_id = parse_yt_link(video_url);
     match fetch_video_info(api_key, video_id).await {
         Ok(video) => {
-            println!("{video}");
             let mut clipboard = Clipboard::new().unwrap();
             let res = format_to_cite(video);
             clipboard.set_text(res.clone()).unwrap();
@@ -176,10 +180,118 @@ pub async fn ref_wiki(wiki_url: &str) {
 }
 
 fn format_to_ref(article: Value, article_url: &str) -> String {
-    format!(" - [«{}» — wikipedia.org]({})",
+    format!("- [«{}» — wikipedia.org]({})",
         article["parse"]["title"].as_str().unwrap_or(""),
         article_url,
     )
+}
+
+async fn fetch_imdb_info(id: &str) -> Result<Value, Box<dyn std::error::Error>> {
+    let api_url = "https://graph.imdbapi.dev/v1";
+    let client = Client::new();
+
+    let query = json!({
+        "query": "query ($id: ID!) { 
+            title(id: $id) { 
+                id
+                type
+                primary_title
+                start_year
+                directors: credits(first: 4, categories:[ \"director\" ]) {
+                    name { display_name }
+                }
+            } 
+        }",
+        "variables": { "id": id }
+    });
+
+    let response = client
+        .post(api_url)
+        .header("Content-Type", "application/json")
+        .json(&query)
+        .send()
+        .await?;
+
+    // Check if the response was successful
+    if !response.status().is_success() {
+        println!("API request failed with status: {}", response.status());
+        println!("Response body: {}", response.text().await?);
+        return Err("API request failed".into());
+    }
+
+    let json: Value = response.json().await?;
+
+    // Check for API errors
+    if let Some(error) = json.get("error") {
+        print!("API returned an error: {:?}", error);
+        return Err("API returned an error".into());
+    }
+
+    Ok(json)
+}
+
+pub async fn cite_imdb(imdb_url: &str) {
+    let id = parse_imdb_link(imdb_url);
+    match fetch_imdb_info(id).await {
+        Ok(info) => {
+            let mut clipboard = Clipboard::new().unwrap();
+            let res = format_to_cite_imdb(info);
+            clipboard.set_text(res.clone()).unwrap();
+            println!("{}", res);
+        }
+        Err(e) => {
+            println!("Error fetching imdb page: {}", e);
+        }
+    }
+}
+
+pub fn parse_imdb_link(url: &str) -> &str {
+    url.strip_prefix("https://www.imdb.com/title/").unwrap().split("/").next().unwrap_or("")
+}
+
+fn format_to_cite_imdb(imdb: Value) -> String {
+    let imdb = &imdb["data"]["title"];
+    let title = imdb["primary_title"].as_str().unwrap_or("");
+    let author = {
+        let names = imdb["directors"].as_array()
+            .unwrap()
+            .iter()
+            .map(|director| 
+                director["name"]["display_name"].as_str().unwrap_or(""))
+            .collect::<Vec<_>>();
+        match names.len() {
+            0 => "", // No directors found
+            1..=3 => &names.join(", "),
+            _ => &format!("{}, {} et al.", names[0], names[1]),
+        }
+    };
+    let year = &imdb["start_year"].as_u64().unwrap();
+    let id = imdb["id"].as_str().unwrap_or("");
+    let tag = match imdb["type"].as_str().unwrap_or("") {
+        "tvSeries" => "series",
+        "movie" => "movie",
+        _ => unreachable!()
+    };
+
+    format!("\
+---
+aliases: 
+  - «{title}» — {author}; ({year})
+---
+
+[`=this.aliases[0]`][link]^preview
+
+[link]: https://www.imdb.com/title/{id}/
+
+%%
+
+Related:: 
+Tags:: #status/glazed, #cite/{tag}
+Index:
+- 
+
+Preceded:: 
+Followed::")
 }
 
 #[tokio::main]
@@ -189,6 +301,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     match &cfg.command {
         Some(Commands::CiteYT { yt_api_key, video_url }) => { cite_yt(yt_api_key, video_url).await; },
         Some(Commands::RefWiki { article_url }) => { ref_wiki(article_url).await; }
+        Some(Commands::CiteIMDB { url}) => { cite_imdb(url).await; },
         None => {
             println!("There was no subcommand given");
         }
