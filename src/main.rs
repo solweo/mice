@@ -5,6 +5,7 @@ use reqwest::Client;
 use serde_json::{Value, json};
 use chrono::{Datelike, NaiveDateTime};
 use arboard::Clipboard;
+use scraper::{Html, Selector};
 use clap::builder::Str;
 use std::env;
 use std::env::args;
@@ -49,6 +50,10 @@ enum Commands {
         #[arg(short, long)]
         article_url: String,
     },
+    Scrape {
+        #[arg(short, long)]
+        url: String,
+    }
 }
 
 async fn fetch_video_info(api_key: &str, video_id: &str) -> Result<Value, Box<dyn std::error::Error>> {
@@ -294,6 +299,63 @@ Preceded::
 Followed::")
 }
 
+async fn fetch_some_page(url: &str) -> Result<Html, Box<dyn std::error::Error>> {
+    let client = Client::new(); // Create a new HTTP client
+
+    let response = client.get(url).send().await?; // Send the HTTP GET request
+
+    if !response.status().is_success() {
+        println!("Request failed with status: {}", response.status());
+        println!("Response body: {}", response.text().await?);
+        return Err("Request failed".into());
+    }
+
+    let body = response.text().await;
+
+    if let Err(err) = body {
+        print!("Returned an error: {:?}", err);
+        return Err("Returned an error".into());
+    }
+
+    let document = Html::parse_document(&body.unwrap());
+    
+    Ok(document)
+}
+
+fn format_scrape(page: Html) -> String {
+    let title_selector = Selector::parse("title").unwrap();
+    let meta_description_selector = Selector::parse("meta[name='description']").unwrap();
+
+    let title = page
+        .select(&title_selector)
+        .next()
+        .map(|node| node.text().collect::<Vec<_>>().join(""))
+        .unwrap_or_else(|| String::from("No title found"));
+
+    let meta_description = page
+        .select(&meta_description_selector)
+        .next()
+        .and_then(|node| node.value().attr("content"))
+        .unwrap_or("No description found")
+        .to_string();
+
+    format!("title: {}\ndescription: {}", title, meta_description)
+}
+
+pub async fn scrape(url: &str) {
+    match fetch_some_page(url).await {
+        Ok(html) => {
+            let mut clipboard = Clipboard::new().unwrap();
+            let res = format_scrape(html);
+            clipboard.set_text(res.clone()).unwrap();
+            println!("{}", res);
+        }
+        Err(e) => {
+            println!("Error fetching page: {}", e);
+        }
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cfg = Cli::from_env_and_args();
@@ -302,6 +364,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some(Commands::CiteYT { yt_api_key, video_url }) => { cite_yt(yt_api_key, video_url).await; },
         Some(Commands::RefWiki { article_url }) => { ref_wiki(article_url).await; }
         Some(Commands::CiteIMDB { url}) => { cite_imdb(url).await; },
+        Some(Commands::Scrape { url }) => { scrape(url).await },
         None => {
             println!("There was no subcommand given");
         }
