@@ -323,7 +323,7 @@ async fn fetch_some_page(url: &str) -> Result<Html, Box<dyn std::error::Error>> 
 }
 
 fn format_scrape(page: Html) -> String {
-    let title_selector = Selector::parse("title").unwrap();
+    let title_selector = Selector::parse("title, Title, TITLE").unwrap();
     let meta_description_selector = Selector::parse("meta[name='description']").unwrap();
 
     let title = page
@@ -339,7 +339,21 @@ fn format_scrape(page: Html) -> String {
         .unwrap_or("No description found")
         .to_string();
 
-    format!("title: {}\ndescription: {}", title, meta_description)
+    // Case-insensitive search for the 'author' meta tag
+    let meta_author = page
+        .select(&Selector::parse("meta").unwrap())
+        .filter_map(|node| {
+            if let Some(name) = node.value().attr("name") {
+                if name.eq_ignore_ascii_case("author") {
+                    return node.value().attr("content").map(|content| content.to_string());
+                }
+            }
+            None
+        })
+        .next()
+        .unwrap_or_else(|| "No author found".to_string());
+
+    format!("title: {}\ndescription: {}\nauthor: {}", title, meta_description, meta_author)
 }
 
 pub async fn scrape(url: &str) {
