@@ -19,8 +19,8 @@ use std::net::Ipv4Addr;
 #[derive(Parser, Debug)]
 #[command(author, version)]
 struct Cli {
-    #[arg(long, default_value = ".")]
-    root: PathBuf,
+    #[arg(short, long, env("INBOX_FOLDER_PATH"))]
+    inbox: PathBuf,
 
     #[command(subcommand)]
     command: Option<Commands>,
