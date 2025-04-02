@@ -1,11 +1,12 @@
 use clap::{Parser, Subcommand};
 use dotenv::dotenv;
 use std::path::PathBuf;
-use reqwest::Client;
+use reqwest::{Client, Url};
 use serde_json::{Value, json};
 use chrono::{Datelike, NaiveDateTime};
 use arboard::Clipboard;
 use scraper::{Html, Selector};
+use publicsuffix::{Domain, List, Psl};
 use clap::builder::Str;
 use std::env;
 use std::env::args;
@@ -53,6 +54,10 @@ enum Commands {
     Scrape {
         #[arg(short, long)]
         url: String,
+    },
+    Batch {
+        #[arg(short, long, required = true, num_args = 1.., value_delimiter = ' ')]
+        urls: Vec<String>,
     }
 }
 
@@ -370,6 +375,35 @@ pub async fn scrape(url: &str) {
     }
 }
 
+fn is_familiar_domain(domain: Domain) -> bool {
+    let familiar_domains = ["youtube.com", "wikipedia.org", "imdb.com"];
+    familiar_domains.iter().any(|&i| domain == i)
+}
+
+pub async fn batch(urls: &[String]) {
+    let urls = urls
+        .iter()
+        .filter_map(|url| match Url::parse(url) {
+            Ok(valid_url) => Some(valid_url),
+            Err(_) => {
+                println!("Invalid URL: {}", url);
+                None
+            }
+        })
+        .collect::<Vec<_>>();
+
+    let list = List::default();
+    
+    for url in urls {
+        let root_domain = list.domain(url.domain().unwrap().as_bytes()).unwrap();
+        if is_familiar_domain(root_domain) {
+            println!("Familiar domain! {}", url);
+        } else {
+            println!("Valid URL: {}", url);
+        }
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cfg = Cli::from_env_and_args();
@@ -379,6 +413,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some(Commands::RefWiki { article_url }) => { ref_wiki(article_url).await; }
         Some(Commands::CiteIMDB { url}) => { cite_imdb(url).await; },
         Some(Commands::Scrape { url }) => { scrape(url).await },
+        Some(Commands::Batch { urls}) => { batch(urls).await },
         None => {
             println!("There was no subcommand given");
         }
