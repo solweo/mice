@@ -4,11 +4,13 @@ cfg_if::cfg_if! { if #[cfg(feature = "back")] {
     use leptos_axum::{generate_route_list, LeptosRoutes};
     use app::*;
     use leptos::logging::log;
+    use dotenvy::dotenv;
 }}
 
 #[cfg(feature = "back")]
 #[tokio::main]
 async fn main() {
+    dotenv().ok();
 
     let conf = get_configuration(None).unwrap();
     let addr = conf.leptos_options.site_addr;

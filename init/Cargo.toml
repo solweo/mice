@@ -1,6 +1,6 @@
 [package]
 name = "init"
-version = "0.1.0"
+version = "0.0.1"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -16,17 +16,19 @@ log.workspace = true
 cfg-if.workspace = true
 
 # Front
-console_error_panic_hook = { workspace = true, optional = true}
-console_log = { workspace = true, optional = true}
-wasm-bindgen = { workspace = true, optional = true}
+console_error_panic_hook    = { workspace = true, optional = true}
+console_log                 = { workspace = true, optional = true}
+wasm-bindgen                = { workspace = true, optional = true}
 
 # Back
-leptos_axum = { workspace = true, optional = true}
-axum = { workspace = true, optional = true}
-simple_logger = { workspace = true, optional = true}
-tokio = { workspace = true, optional = true}
-tower = { workspace = true, optional = true}
-tower-http = { workspace = true, optional = true}
+leptos_axum     = { workspace = true, optional = true}
+axum            = { workspace = true, optional = true}
+axum-macros     = { workspace = true, optional = true }
+simple_logger   = { workspace = true, optional = true}
+tokio           = { workspace = true, optional = true}
+tower           = { workspace = true, optional = true}
+tower-http      = { workspace = true, optional = true}
+dotenvy         = { workspace = true, optional = true}
 
 [features]
 front = [
@@ -41,8 +43,10 @@ back = [
     "leptos/ssr",
     "dep:leptos_axum",
     "dep:axum",
+    "dep:axum-macros",
     "dep:simple_logger",
     "dep:tokio",
     "dep:tower",
-    "dep:tower-http"
+    "dep:tower-http",
+    "dep:dotenvy"
 ]
