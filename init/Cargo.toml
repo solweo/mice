@@ -1,0 +1,48 @@
+[package]
+name = "init"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# Common
+app = { path = "../app", default-features = false }
+leptos.workspace = true
+log.workspace = true
+cfg-if.workspace = true
+
+# Front
+console_error_panic_hook = { workspace = true, optional = true}
+console_log = { workspace = true, optional = true}
+wasm-bindgen = { workspace = true, optional = true}
+
+# Back
+leptos_axum = { workspace = true, optional = true}
+axum = { workspace = true, optional = true}
+simple_logger = { workspace = true, optional = true}
+tokio = { workspace = true, optional = true}
+tower = { workspace = true, optional = true}
+tower-http = { workspace = true, optional = true}
+
+[features]
+front = [
+    "app/hydrate",
+    "leptos/hydrate",
+    "dep:console_error_panic_hook",
+    "dep:console_log",
+    "dep:wasm-bindgen"
+]
+back = [
+    "app/ssr",
+    "leptos/ssr",
+    "dep:leptos_axum",
+    "dep:axum",
+    "dep:simple_logger",
+    "dep:tokio",
+    "dep:tower",
+    "dep:tower-http"
+]
