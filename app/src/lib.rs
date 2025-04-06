@@ -2,7 +2,8 @@ use leptos::{
     logging::log, 
     prelude::*, 
     task::spawn_local, 
-    Params
+    Params,
+    html
 };
 use leptos_meta::{provide_meta_context, MetaTags, Title};
 use leptos_router::{
@@ -11,6 +12,7 @@ use leptos_router::{
     hooks::use_query,
     params::Params,
 };
+use regex::Regex;
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
@@ -32,13 +34,11 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
 
 #[component]
 pub fn App() -> impl IntoView {
-    // Provides context that manages stylesheets, titles, meta tags, etc.
     provide_meta_context();
 
     view! {
         <Title text="Hi!"/>
 
-        // content for this welcome page
         <Router>
             <main>
                 <Routes fallback=|| "Page not found.".into_view()>
@@ -55,37 +55,61 @@ struct ApiKey {
     key: String,
 }
 
-/// Renders the home page of your application.
 #[component]
 fn HomePage() -> impl IntoView {
     let api_key = use_query::<ApiKey>();
+    let (url, set_url) = signal("".to_string());
 
-    // Creates a reactive value to update the button
-    let count = RwSignal::new(0);
-    let on_click = move |_| {
-        // let api_key = api_key.read().as_ref();
+    let handle_send = move || {
         if let Ok(api_key) = api_key.read().as_ref() {
             let key = api_key.key.clone();
+            let url = url.get();
             spawn_local(async {
-                let _ = send_to_inbox(key).await;
+                let _ = send_to_inbox(key, url).await;
             });
         }
-        *count.write() += 1
     };
 
+    let input_element: NodeRef<html::Input> = NodeRef::new();
+    Effect::new(move || {
+        if let Some(input) = input_element.get() {
+            input.focus().unwrap();
+        }
+    });
+
+    let url_regex = Regex::new(r"(?i)^(https?|ftp):\/\/([a-z0-9-]+\.)+[a-z]{2,}(:\d+)?(\/\S*)?$").unwrap();
+    let input_style = move || {
+        if url_regex.is_match(&url.get()) {
+            "color: blue; text-decoration: underline;"
+        } else {
+            ""
+        }
+    };
+    
     view! {
-        <h1>"Hi!"</h1>
-        <button on:click=on_click>"Click Me: " {count}</button>
+        <input type="url"
+            placeholder="Paste your url note"
+            style=input_style
+            bind:value=(url, set_url)
+            node_ref=input_element
+            on:keydown= move |ev| if ev.key() == "Enter" && !url().is_empty() {
+                handle_send();
+                set_url(String::new());
+            }
+        />
     }
 }
 
 #[server]
-pub async fn send_to_inbox(api_key: String) -> Result<(), ServerFnError> {
+pub async fn send_to_inbox(api_key: String, note: String) -> Result<(), ServerFnError> {
     let required_key = std::env::var("MY_SECRET_API_KEY")?;
     if required_key == api_key {
-        log!("Request was authenticated");
+        log!("Request was authenticated\nnote: {}", note);
+        if note.is_empty() {
+            return Err(ServerFnError::ServerError(String::new()));
+        }
         Ok(())
     } else {
-        Ok(())
+        Err(ServerFnError::ServerError(String::new()))
     }
 }
