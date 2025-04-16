@@ -7,6 +7,12 @@ use chrono::{Datelike, NaiveDateTime};
 use arboard::Clipboard;
 use scraper::{Html, Selector};
 use publicsuffix::{Domain, List, Psl};
+use serde::{Deserialize, Serialize};
+use regex::Regex;
+use surrealdb::{
+    Surreal,
+    engine::local::Mem
+};
 use clap::builder::Str;
 use std::env;
 use std::env::args;
@@ -16,6 +22,13 @@ use std::convert::TryFrom;
 use anyhow::Error;
 use std::io::Read;
 use std::net::Ipv4Addr;
+use surrealdb::engine::any;
+use surrealdb::opt::auth::Root;
+use surrealdb::opt::Config;
+use tokio::net::TcpListener;
+use surrealdb::engine::remote::ws::Ws;
+use surrealdb::opt::Resource;
+use surrealdb::{Datetime, RecordId};
 
 #[derive(Parser, Debug)]
 #[command(author, version)]
@@ -41,7 +54,7 @@ enum Commands {
         yt_api_key: String,
         
         #[arg(short, long)]
-        video_url: String,
+        url: String,
     },
     CiteIMDB { 
         #[arg(short, long)]
@@ -49,7 +62,7 @@ enum Commands {
     },
     RefWiki {
         #[arg(short, long)]
-        article_url: String,
+        url: String,
     },
     Scrape {
         #[arg(short, long)]
@@ -58,7 +71,9 @@ enum Commands {
     Batch {
         #[arg(short, long, required = true, num_args = 1.., value_delimiter = ' ')]
         urls: Vec<String>,
-    }
+    },
+    /// Yoink all notes and nuke them
+    Sync { }
 }
 
 async fn fetch_video_info(api_key: &str, video_id: &str) -> Result<Value, Box<dyn std::error::Error>> {
@@ -404,16 +419,48 @@ pub async fn batch(urls: &[String]) {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Note {
+    pub url: String,
+}
+
+async fn yoink_n_nuke() -> Result<(), Box<dyn std::error::Error>> {
+    let db = any::connect(
+        env::var("SURREAL_REMOTE_ENDPOINT")?
+    ).await?;
+
+    db.signin(Root {
+		username: &env::var("DB_USER")?,
+		password: &env::var("DB_PASS")?,
+	}).await?;
+    
+    db.use_ns(&env::var("SURREAL_NS")?)
+      .use_db(&env::var("SURREAL_DB")?)
+      .await?;
+
+    db.query("DEFINE TABLE note SCHEMALESS").await?;
+
+    let _: Option<Note> = db.create("note").content(Note {
+        url: String::from("some_url"),
+    }).await.unwrap();
+
+    let notes: Vec<Note> = db.delete("note").await.unwrap();
+    dbg!(notes);
+    
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cfg = Cli::from_env_and_args();
 
     match &cfg.command {
-        Some(Commands::CiteYT { yt_api_key, video_url }) => { cite_yt(yt_api_key, video_url).await; },
-        Some(Commands::RefWiki { article_url }) => { ref_wiki(article_url).await; }
+        Some(Commands::CiteYT { yt_api_key, url }) => { cite_yt(yt_api_key, url).await; },
+        Some(Commands::RefWiki { url }) => { ref_wiki(url).await; }
         Some(Commands::CiteIMDB { url}) => { cite_imdb(url).await; },
         Some(Commands::Scrape { url }) => { scrape(url).await },
         Some(Commands::Batch { urls}) => { batch(urls).await },
+        Some(Commands::Sync {  }) => { yoink_n_nuke().await? }
         None => {
             println!("There was no subcommand given");
         }
