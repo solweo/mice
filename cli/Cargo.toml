@@ -5,6 +5,7 @@ edition = "2024"
 description = "state of the art cli"
 
 [dependencies]
+interop = { path = "../interop", default-features = false, features = ["cli-op"] }
 itertools = "0.10.5"
 thiserror = "2"
 log = "0.4"

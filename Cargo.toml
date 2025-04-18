@@ -3,7 +3,8 @@ resolver = "2"
 members = [
     "app",
     "init",
-    "cli"
+    "cli",
+    "interop"
 ]
 
 # need to be applied only to wasm build

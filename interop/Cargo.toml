@@ -1,12 +1,11 @@
 [package]
-name = "app"
+name = "interop"
 version = "0.0.1"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-interop = { path = "../interop", default-features = false }
 leptos.workspace = true
 leptos_meta.workspace = true
 leptos_router.workspace = true
@@ -19,9 +18,20 @@ web-sys.workspace = true
 regex.workspace = true
 surrealdb = { workspace = true, optional = true }
 serde.workspace = true
+dotenvy = { workspace = true, optional = true}
 
 [features]
 default = []
-hydrate = ["interop/front-op", "leptos/hydrate"]
-ssr = ["interop/back-op", "leptos/ssr", "leptos_meta/ssr", "leptos_router/ssr", "dep:leptos_axum", "dep:surrealdb"]
-
+front-op = [
+    "leptos/hydrate"
+]
+back-op = [
+    "leptos/ssr", 
+    "leptos_meta/ssr", 
+    "leptos_router/ssr", 
+    "dep:leptos_axum", 
+    "dep:surrealdb"
+]
+cli-op = [
+    "dep:surrealdb"
+]

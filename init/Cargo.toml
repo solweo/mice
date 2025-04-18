@@ -11,6 +11,7 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 # Common
 app = { path = "../app", default-features = false }
+interop = { path = "../interop", default-features = false }
 leptos.workspace = true
 log.workspace = true
 cfg-if.workspace = true
@@ -35,6 +36,7 @@ serde           = { workspace = true, optional = true}
 [features]
 front = [
     "app/hydrate",
+    "interop/front-op",
     "leptos/hydrate",
     "dep:console_error_panic_hook",
     "dep:console_log",
@@ -42,6 +44,7 @@ front = [
 ]
 back = [
     "app/ssr",
+    "interop/back-op",
     "leptos/ssr",
     "dep:leptos_axum",
     "dep:axum",

@@ -1,5 +1,6 @@
 use clap::{Parser, Subcommand};
 use dotenv::dotenv;
+use std::ops::Not;
 use std::path::PathBuf;
 use reqwest::{Client, Url};
 use serde_json::{Value, json};
@@ -29,6 +30,7 @@ use tokio::net::TcpListener;
 use surrealdb::engine::remote::ws::Ws;
 use surrealdb::opt::Resource;
 use surrealdb::{Datetime, RecordId};
+use interop::Note;
 
 #[derive(Parser, Debug)]
 #[command(author, version)]
@@ -419,32 +421,10 @@ pub async fn batch(urls: &[String]) {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Note {
-    pub url: String,
-}
-
 async fn yoink_n_nuke() -> Result<(), Box<dyn std::error::Error>> {
-    let db = any::connect(
-        env::var("SURREAL_REMOTE_ENDPOINT")?
-    ).await?;
+    let db = interop::db_init().await?;
 
-    db.signin(Root {
-		username: &env::var("DB_USER")?,
-		password: &env::var("DB_PASS")?,
-	}).await?;
-    
-    db.use_ns(&env::var("SURREAL_NS")?)
-      .use_db(&env::var("SURREAL_DB")?)
-      .await?;
-
-    db.query("DEFINE TABLE note SCHEMALESS").await?;
-
-    let _: Option<Note> = db.create("note").content(Note {
-        url: String::from("some_url"),
-    }).await.unwrap();
-
-    let notes: Vec<Note> = db.delete("note").await.unwrap();
+    let notes: Vec<Note> = db.delete("note").await?;
     dbg!(notes);
     
     Ok(())
