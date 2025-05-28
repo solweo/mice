@@ -5,7 +5,7 @@ use leptos::{
     Params,
     html
 };
-use leptos_meta::{provide_meta_context, MetaTags, Title};
+use leptos_meta::{provide_meta_context, MetaTags, Title, Link, Meta, Stylesheet};
 use leptos_router::{
     components::{Route, Router, Routes},
     StaticSegment,
@@ -38,8 +38,13 @@ pub fn App() -> impl IntoView {
     provide_meta_context();
 
     view! {
-        <Title text="Hi!"/>
-
+        <Stylesheet id="leptos" href="/pkg/mice-webapp.css"/>
+        <Meta name="description" content="Note-taker for URLs"/>
+        <Title text="Notes"/>
+        <Link rel="shortcut icon" type_="image/ico" href="/favicon.ico"/>
+        <link rel="preload" href="/triangular_lattice.svg" r#as="image" r#type="image/svg+xml"/>
+        <link rel="preload" href="/stack.svg" r#as="image" r#type="image/svg+xml"/>
+        
         <Router>
             <main>
                 <Routes fallback=|| "Page not found.".into_view()>
@@ -85,9 +90,51 @@ fn HomePage() -> impl IntoView {
             ""
         }
     };
+
+    use std::time::Duration;
+
+    let hide_delay =  Duration::from_millis(300);
+    let show_lock = RwSignal::new(true);
+    let show_notes = RwSignal::new(false);
+    let switch_show = move |_| {
+        if show_lock.get() {
+            show_lock.set(false);
+            set_timeout(move || show_notes.set(true), hide_delay);
+        } else {
+            show_notes.set(false);
+            set_timeout(move || show_lock.set(true), hide_delay);
+        }
+    };
     
     view! {
-        <input type="url"
+        <button
+            on:click=switch_show
+        >
+            "Toggle"
+        </button>
+        
+        <LockIcon/>
+        <NotesIcon/>
+
+        // `AnimatedShow` wrapper breaks translucent layer
+        <AnimatedShow
+            when=show_lock
+            show_class="fade-in"
+            hide_class="fade-out"
+            hide_delay
+        >
+            <LockIcon/>
+        </AnimatedShow>
+        <AnimatedShow
+            when=show_notes
+            show_class="fade-in"
+            hide_class="fade-out"
+            hide_delay
+        >
+            <NotesIcon/>
+        </AnimatedShow>
+
+        <div><input type="url"
             placeholder="Paste your url note"
             style=input_style
             bind:value=(url, set_url)
@@ -96,6 +143,29 @@ fn HomePage() -> impl IntoView {
                 handle_send();
                 set_url(String::new());
             }
-        />
+        /></div>
+    }
+}
+
+#[component]
+fn LockIcon() -> impl IntoView {
+    view! {
+        <div class="lock-icon">
+            <div/>
+            <div/>
+            <div/>
+        </div>
+    }
+}
+
+#[component]
+fn NotesIcon() -> impl IntoView {
+    view! {
+        <div class="notes-icon">
+            <div/>
+            <div/>
+            <div/>
+            <div/>
+        </div>
     }
 }

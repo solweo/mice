@@ -1,0 +1,288 @@
+body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+    background: linear-gradient(to bottom right, white, floralwhite);
+    height: 100vh;
+}
+
+body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url("/triangular_lattice.svg") repeat;
+    opacity: 0.1;
+    z-index: -1;
+}
+
+input {
+    width: 300px;
+    padding: 12px 20px;
+    font-size: 16px;
+    border-radius: 20px;
+    border: none;
+    outline: none;
+    background: rgba(255, 250, 240, .2);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: #1a1a1a;
+    caret-color: #1a1a1a;
+}
+
+input::placeholder {
+    color: rgba(0, 0, 0, .4);
+    transition: opacity .25s;
+}
+
+input:focus::placeholder {
+    opacity: 0;
+}
+
+div:has(input) {
+    /* border: 5px solid #00f; */
+    margin-inline: calc(50vw - 175px);
+    margin-top: 5vh;
+    position: relative;
+    width:min-content;
+    height:min-content;
+}
+
+div:has(input)::after {
+    content: '';
+    position: absolute;
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 40px;
+    border: 3px solid #fffaf0;
+    box-sizing: border-box;
+    filter: blur(3px);
+    transition: box-shadow .3s;
+
+}
+
+div:has(input)::before {
+    content: '';
+    position: absolute;
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 40px;
+    border: 4px solid #fffaf0;
+    /* box-sizing: border-box; */
+    filter: blur(3px);
+    box-shadow: 
+        inset 4px 4px 10px rgba(0, 0, 0, .2), 
+        inset -4px -4px 10px rgba(255, 250, 240, .3), 
+        4px 4px 15px rgba(0, 0, 0, .1), 
+        -4px -4px 15px rgba(255, 250, 240, .2);
+}
+
+div:has(input:focus)::after {
+    content: '';
+    position: absolute;
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 40px;
+    border: 3px solid #fffaf0;
+    box-sizing: border-box;
+    filter: blur(3px);
+    box-shadow: 
+        inset 4px 4px 10px rgba(0, 0, 0, .2), 
+        inset -4px -4px 10px rgba(255, 250, 240, .3), 
+        4px 4px 15px rgba(0, 0, 0, .1), 
+        -4px -4px 15px rgba(255, 250, 240, .2)
+}
+
+.lock-icon {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    margin-inline: calc(50vw - 50px - 5px);
+    margin-top: 10vh;
+    transition: all 0.15s cubic-bezier(0.18, 0.89, 0.33, 1.48);
+
+    & div {
+        position: absolute; 
+        width: 100%;
+        height: 100%;
+        background-size: cover;
+        background-repeat: no-repeat;
+        background-position: center;
+        transition: all 0.35s cubic-bezier(0.18, 0.89, 0.33, 1.48);
+    }
+
+    &:hover {
+        transform: translateY(-0.3rem) scale(1.05);
+
+        & div:nth-child(1) {
+            transform: translateY(-0.4rem) translateX(0.1rem) rotate(5deg);
+        }
+
+        & div:nth-child(2) {
+            transform: translateY(0.2rem) translateX(-0.05rem) rotate(-2.5deg);
+        }
+      
+        & div:nth-child(3) {
+            transform: translateY(0.3rem) translateX(-0.06rem) rotate(-2.5deg);
+        }
+    }
+
+    &[data-state="another"] {
+        transform: translateY(-0.3rem) scale(1.05);
+
+        & div:nth-child(1) {
+            transform: translateY(-0.4rem) translateX(0.1rem) rotate(5deg);
+        }
+
+        & div:nth-child(2) {
+            transform: translateY(0.2rem) translateX(-0.05rem) rotate(-2.5deg);
+        }
+      
+        & div:nth-child(3) {
+            transform: translateY(0.3rem) translateX(-0.06rem) rotate(-2.5deg);
+        }
+    }
+}
+
+.lock-icon div:nth-child(1) { 
+    background-image: url('/stack.svg#lock-l1');
+} 
+
+.lock-icon div:nth-child(2) {
+    &::after {
+        content: '';
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background-image: url('/stack.svg#lock-l2');
+        backdrop-filter: blur(4px) saturate(150%); 
+        -webkit-backdrop-filter: blur(4px) saturate(150%);
+
+        clip-path: url("/stack.svg#lock-l2-clip");
+        -webkit-clip-path: url("/stack.svg#lock-l2-clip");
+ 
+        mask-mode: luminance;
+        mask-image: url('/stack.svg#lock-l2-mask');
+        -webkit-mask-image: url('/stack.svg#lock-l2-mask');
+    }
+}
+
+.lock-icon div:nth-child(3) {
+    background-image: url('/stack.svg#lock-l3');
+}
+
+.notes-icon {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    margin-inline: calc(50vw - 50px - 5px);
+    margin-top: 10vh;
+    transition: all 0.15s cubic-bezier(0.18, 0.89, 0.33, 1.48);
+
+    & div {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background-size: cover;
+        background-repeat: no-repeat;
+        background-position: center;
+        transition: all 0.35s cubic-bezier(0.18, 0.89, 0.33, 1.48);
+    }
+
+    &:hover {
+        transform: translateY(-0.3rem) scale(1.05);
+  
+        & div:nth-child(1) {
+            transform: translateY(-0.6rem) translateX(-0.2rem);
+        }
+        & div:nth-child(2) {
+            transform: translateY(-0.3rem) translateX(0.3rem) rotate(8deg);
+        }
+        & div:nth-child(3) {
+            transform: translateY(-0.4rem) translateX(0.4rem) rotate(8deg);
+        }
+        & div:nth-child(4) {
+            transform: translateY(-0.2rem) translateX(0.3rem) rotate(8deg);
+        }
+    }
+
+    &[data-state="another"] {
+        transform: translateY(-0.3rem) scale(1.05);
+  
+        & div:nth-child(1) {
+            transform: translateY(-0.6rem) translateX(-0.2rem);
+        }
+        & div:nth-child(2) {
+            transform: translateY(-0.3rem) translateX(0.3rem) rotate(8deg);
+        }
+        & div:nth-child(3) {
+            transform: translateY(-0.4rem) translateX(0.4rem) rotate(8deg);
+        }
+        & div:nth-child(4) {
+            transform: translateY(-0.2rem) translateX(0.3rem) rotate(8deg);
+        }
+    }
+}
+
+.notes-icon div:nth-child(1) { 
+    background-image: url('/stack.svg#notes-l1');
+} 
+
+.notes-icon div:nth-child(2) { 
+    background-image: url("/stack.svg#notes-l2");
+    filter: blur(10px);
+} 
+
+.notes-icon div:nth-child(3) {
+    /* Using pseudo-element avoids transitioning the masked layer directly
+       | CSS transitions can interfere with SVG masks: 
+       | masked element may disappear during the 
+       | transition or not render at all
+    */
+    &::after {
+        content: '';
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background-image: url("/stack.svg#notes-l3");
+        backdrop-filter: blur(4px) saturate(130%);
+        -webkit-backdrop-filter: blur(4px) saturate(130%);        
+        mask-mode: luminance;
+        mask-image: url("/stack.svg#notes-l3-mask");
+        -webkit-mask-image: url("/stack.svg#notes-l3-mask");
+    }
+}
+
+.notes-icon div:nth-child(4) {
+    background-image: url('/stack.svg#notes-l4');
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+    from { opacity: 1;}
+    to { opacity: 0;}
+}
+
+.fade-in {
+    animation: .3s cubic-bezier(.76,0,.24,1) fadeIn forwards;
+}
+
+.fade-out {
+    animation: .3s cubic-bezier(.76,0,.24,1) fadeOut forwards;
+} 

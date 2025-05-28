@@ -26,29 +26,6 @@ cfg_if::cfg_if! { if #[cfg(feature = "back")] {
 async fn main() {
     dotenv().ok();
 
-    // let db =  {
-    //     let endpoint = env::var("SURREAL_LOCAL_ENDPOINT")
-    //         .expect("Expected `SURREAL_LOCAL_ENDPOINT` environment variable to be present");
-        
-    //     if let Ok(db) = any::connect(endpoint).await { log!("cool!"); db } 
-    //     else {
-    //         let endpoint = env::var("SURREAL_REMOTE_ENDPOINT")
-    //             .expect("Expected `SURREAL_REMOTE_ENDPOINT` environment variable to be present");
-    //         any::connect(endpoint).await.unwrap()
-    //     }
-    // };
-
-    // db.signin(Root {
-	// 	username: &env::var("DB_USER").unwrap(),
-	// 	password: &env::var("DB_PASS").unwrap(),
-	// }).await.unwrap();
-    
-    // db.use_ns(env::var("SURREAL_NS").unwrap())
-    //   .use_db(env::var("SURREAL_DB").unwrap())
-    //   .await.unwrap();
-
-    // db.query("DEFINE TABLE note SCHEMALESS").await.unwrap();
-
     let db = interop::db_init().await.unwrap();
 
     let conf = get_configuration(None).unwrap();
