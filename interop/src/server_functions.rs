@@ -26,3 +26,14 @@ pub async fn send_to_inbox(api_key: String, note: String) -> Result<(), ServerFn
         Err(ServerFnError::ServerError(String::new()))
     }
 }
+
+#[server]
+pub async fn authenticate(api_key: String) -> Result<(), ServerFnError> {
+    let required_key = std::env::var("MY_SECRET_API_KEY")?;
+
+    if required_key == api_key {
+        Ok(())
+    } else {
+        Err(ServerFnError::ServerError(String::from("invalid key")))
+    }
+}

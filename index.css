@@ -39,7 +39,7 @@ input:focus::placeholder {
     opacity: 0;
 }
 
-div:has(input) {
+div:has(> input) {
     /* border: 5px solid #00f; */
     margin-inline: calc(50vw - 175px);
     margin-top: 5vh;
@@ -48,7 +48,7 @@ div:has(input) {
     height:min-content;
 }
 
-div:has(input)::after {
+div:has(> input)::after {
     content: '';
     position: absolute;
     margin: 0;
@@ -65,7 +65,7 @@ div:has(input)::after {
 
 }
 
-div:has(input)::before {
+div:has(> input)::before {
     content: '';
     position: absolute;
     margin: 0;
@@ -85,7 +85,7 @@ div:has(input)::before {
         -4px -4px 15px rgba(255, 250, 240, .2);
 }
 
-div:has(input:focus)::after {
+div:has(> input:focus)::after {
     content: '';
     position: absolute;
     margin: 0;
@@ -188,24 +188,6 @@ div:has(input:focus)::after {
     }
 }
 
-details.admonition > summary.admonition-title::after {
-    position: absolute;
-    top: 0.625em;
-    inset-inline-end: 1.6rem;
-    height: 2rem;
-    width: 2rem;
-    background-color: currentcolor;
-    mask-image: var(--md-details-icon);
-    -webkit-mask-image: var(--md-details-icon);
-    mask-repeat: no-repeat;
-    -webkit-mask-repeat: no-repeat;
-    mask-size: contain;
-    -webkit-mask-size: contain;
-    content: "";
-    transform: rotate(0deg);
-    transition: transform 0.25s;
-  }
-
 .lock-icon div:nth-child(3) {
     background-image: url('/stack.svg#lock-l3');
 }
@@ -305,19 +287,57 @@ details.admonition > summary.admonition-title::after {
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from { 
+        transform: translateY(.5rem) scale(0.4);
+    }
+    to { 
+        transform: scale(1);
+    }
 }
 
 @keyframes fadeOut {
-    from { opacity: 1;}
-    to { opacity: 0;}
+    from { 
+        transform: scale(1);
+    }
+    to { 
+        transform: translateY(.5rem) scale(0.4);
+    }
+}
+
+@keyframes fadeInPlus {
+    from { 
+        transform: scale(0.9);
+    }
+    to { 
+        transform: scale(1);
+    }
+}
+ 
+@keyframes fadeOutPlus {
+    from { 
+        transform: scale(1);
+    }
+    to { 
+        transform: scale(0.9); 
+    }
 }
 
 .fade-in {
-    animation: .3s cubic-bezier(.76,0,.24,1) fadeIn forwards;
+    & > .lock-icon, 
+    & > .notes-icon {
+        animation: .3s cubic-bezier(0.18, 0.89, 0.33, 1.48) fadeIn forwards;
+    }
+    & > div:has(> input) {
+        animation: .3s cubic-bezier(0.18, 0.89, 0.33, 1.48) fadeInPlus forwards;
+    }
 }
 
 .fade-out {
-    animation: .3s cubic-bezier(.76,0,.24,1) fadeOut forwards;
-} 
+    & > .lock-icon,
+    & > .notes-icon {
+        animation: .3s cubic-bezier(0.18, 0.89, 0.33, 1.48) fadeOut forwards;
+    }
+    & > div:has(> input) {
+        animation: .3s cubic-bezier(0.18, 0.89, 0.33, 1.48) fadeOutPlus forwards;
+    }
+}
