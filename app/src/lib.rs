@@ -90,21 +90,34 @@ fn HomePage() -> impl IntoView {
 
     use std::time::Duration;
 
+    let lock_icon_state = RwSignal::new(false);
+    let notes_icon_state = RwSignal::new(false);
+    let alter_lock_icon = move || {
+        lock_icon_state.set(true);
+        set_timeout(move || lock_icon_state.set(false), Duration::from_millis(350));
+    };
+    let alter_notes_icon = move || {
+        notes_icon_state.set(true);
+        set_timeout(move || notes_icon_state.set(false), Duration::from_millis(350));
+    };
+
     let hide_delay =  Duration::from_millis(300);
     let show_lock = RwSignal::new(false);
     let show_notes = RwSignal::new(false);
 
     Effect::new(move || {
         if let Some(true) = authenticated.get() {
+            alter_notes_icon();
             show_lock.set(false);
             set_timeout(move || if let Some(true) = authenticated.get_untracked() { show_notes.set(true) }, hide_delay);
         } 
         else {
+            alter_lock_icon();
+            log!("wants to be animated");
             show_notes.set(false);
             set_timeout(move || if let Some(false) = authenticated.get_untracked() { show_lock.set(true) }, hide_delay);
         }
     });
-
 
     Effect::new(move || {
         log!("auth: {:?}", authenticated.get());
@@ -132,68 +145,72 @@ fn HomePage() -> impl IntoView {
     // });
 
     view! {
-        
-        // <LockIcon/>
-        // <NotesIcon/>
-        
+        <div class="centre-ui">
         // `AnimatedShow` wrapper breaks translucent layer
-        <AnimatedShow
-            when=show_lock
-            show_class="fade-in"
-            hide_class="fade-out"
-            hide_delay
-        >
-            <LockIcon/>
-            <div><input type="url"
-                placeholder="Enter passphrase"
-                bind:value=(key_from_input, set_key_on_input)
-                on:keydown= {
-                    let navigate = use_navigate();
-                    move |ev| if ev.key() == "Enter" && !key_from_input().is_empty() {
-                        let url = format!("/?key={}", key_from_input());
-                        set_key_on_input(String::new());
-                        navigate(&url, Default::default());
-                    }
-                }
-            /></div>
-        </AnimatedShow>
-        <AnimatedShow
-            when=show_notes
-            show_class="fade-in"
-            hide_class="fade-out"
-            hide_delay
-        >
-            <NotesIcon/>
-            <div><input type="url"
-                placeholder="Paste your url note"
-                style={
-                    let url_regex = Regex::new(r"(?i)^(https?|ftp):\/\/([a-z0-9-]+\.)+[a-z]{2,}(:\d+)?(\/\S*)?$").unwrap();
-                    move || {
-                        if url_regex.is_match(&url.get()) {
-                            "color: blue; text-decoration: underline;"
-                        } else {
-                            ""
+            <AnimatedShow
+                when=show_lock
+                show_class="fade-in"
+                hide_class="fade-out"
+                hide_delay
+            >
+                <LockIcon alter=lock_icon_state/>
+                <div><input type="text"
+                    placeholder="Enter passphrase"
+                    bind:value=(key_from_input, set_key_on_input)
+                    on:keydown= {
+                        let navigate = use_navigate();
+                        move |ev| if ev.key() == "Enter" && !key_from_input().is_empty() {
+                            let url = format!("/?key={}", key_from_input());
+                            set_key_on_input(String::new());
+                            navigate(&url, Default::default());
                         }
                     }
-                }
-                bind:value=(url, set_url)
-                node_ref=input_element
-                on:keydown= move |ev| if ev.key() == "Enter" && !url().is_empty() {
-                    handle_send();
-                    set_url(String::new());
-                }
-            /></div>
+                /></div>
+            </AnimatedShow>
+            <AnimatedShow
+                when=show_notes
+                show_class="fade-in"
+                hide_class="fade-out"
+                hide_delay
+            >
+                <NotesIcon alter=notes_icon_state/>
+                <div><input type="url"
+                    placeholder="Paste your url note"
+                    style={
+                        let url_regex = Regex::new(r"(?i)^(https?|ftp):\/\/([a-z0-9-]+\.)+[a-z]{2,}(:\d+)?(\/\S*)?$").unwrap();
+                        move || {
+                            if url_regex.is_match(&url.get()) {
+                                "color: blue; text-decoration: underline;"
+                            } else {
+                                ""
+                            }
+                        }
+                    }
+                    bind:value=(url, set_url)
+                    node_ref=input_element
+                    on:keydown= move |ev| if ev.key() == "Enter" && !url().is_empty() {
+                        handle_send();
+                        set_url(String::new());
+                        alter_notes_icon();
+                    }
+                /></div>
 
-        </AnimatedShow>
-
+            </AnimatedShow>
+        </div>
         
     }
 }
 
 #[component]
-fn LockIcon() -> impl IntoView {
+fn LockIcon(
+    /// A closure that returns a bool that determines whether this icon alters
+    #[prop(into)]
+    alter: Signal<bool>,
+) -> impl IntoView {
     view! {
-        <div class="lock-icon">
+        <div class="lock-icon"
+            data-state= move || { if alter() {"alter"} else {""} }
+        >
             <div/>
             <div/>
             <div/>
@@ -202,9 +219,15 @@ fn LockIcon() -> impl IntoView {
 }
 
 #[component]
-fn NotesIcon() -> impl IntoView {
+fn NotesIcon(
+    /// A closure that returns a bool that determines whether this icon alters
+    #[prop(into)]
+    alter: Signal<bool>,
+) -> impl IntoView {
     view! {
-        <div class="notes-icon">
+        <div class="notes-icon" 
+            data-state= move || { if alter() {"alter"} else {""} }
+        >
             <div/>
             <div/>
             <div/>

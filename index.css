@@ -16,6 +16,20 @@ body::before {
     z-index: -1;
 }
 
+.centre-ui {
+    margin-top: 30vh;
+    width: max-content;
+    height: max-content;
+    margin-inline: auto;
+    & .fade-in,
+    & .fade-out {
+        display: flex;
+        flex-direction: column; 
+        align-items: center;
+        justify-content: center;
+    }
+}
+
 input {
     width: 300px;
     padding: 12px 20px;
@@ -41,7 +55,7 @@ input:focus::placeholder {
 
 div:has(> input) {
     /* border: 5px solid #00f; */
-    margin-inline: calc(50vw - 175px);
+    /* margin-inline: calc(50vw - 175px); */
     margin-top: 5vh;
     position: relative;
     width:min-content;
@@ -109,8 +123,8 @@ div:has(> input:focus)::after {
     position: relative;
     width: 100px;
     height: 100px;
-    margin-inline: calc(50vw - 50px - 5px);
-    margin-top: 10vh;
+    /* margin-inline: calc(50vw - 50px - 5px); */
+    /* margin-top: 10vh; */
     transition: all 0.15s cubic-bezier(0.18, 0.89, 0.33, 1.48);
 
     & div {
@@ -139,7 +153,7 @@ div:has(> input:focus)::after {
         }
     }
 
-    &[data-state="another"] {
+    &[data-state="alter"] {
         transform: translateY(-0.3rem) scale(1.05);
 
         & div:nth-child(1) {
@@ -196,8 +210,8 @@ div:has(> input:focus)::after {
     position: relative;
     width: 100px;
     height: 100px;
-    margin-inline: calc(50vw - 50px - 5px);
-    margin-top: 10vh;
+    /* margin-inline: calc(50vw - 50px - 5px); */
+    /* margin-top: 10vh; */
     transition: all 0.15s cubic-bezier(0.18, 0.89, 0.33, 1.48);
 
     & div {
@@ -227,7 +241,7 @@ div:has(> input:focus)::after {
         }
     }
 
-    &[data-state="another"] {
+    &[data-state="alter"] {
         transform: translateY(-0.3rem) scale(1.05);
   
         & div:nth-child(1) {
